@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06070a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2306070a'/%3E%3Cpath d='M4 22h6l3-12h6l3 12h6' stroke='%23e3322b' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+<title>AC EVO Hotlap League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: night-circuit canvas wallpaper fixed behind a single column of smoked-glass panels; timing-screen colours carry meaning */
+:root{
+  --bg:#06070a; --panel:rgba(14,17,23,.78); --panel-solid:#0f1218; --line:rgba(150,165,190,.16);
+  --fg:#eef1f5; --muted:#8e98a8; --kerb:#e3322b; --kerb-w:#f4f4f2;
+  --purple:#b46cff; --green:#2fd27a; --amber:#ffb21e;
+  --f-display:"Chakra Petch","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{background:var(--bg);color:var(--fg)}
+body{margin:0}
+[hidden]{display:none!important}
+body{font-family:var(--f-body);font-size:15px;line-height:1.55;min-height:100%}
+#wall,#fx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding-block:20px 60px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:18px}
+header.hero{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.kerb{height:8px;width:132px;background:repeating-linear-gradient(90deg,var(--kerb) 0 22px,var(--kerb-w) 22px 44px);transform:skewX(-24deg);border-radius:1px}
+.hero h1{font-family:var(--f-display);font-weight:700;font-size:clamp(34px,8vw,58px);line-height:.95;letter-spacing:.01em;margin:6px 0 0;text-transform:uppercase;font-style:italic;text-wrap:balance}
+.hero h1 span{color:var(--kerb)}
+.hero p{margin:0;color:var(--muted);font-size:14px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:4px;padding:5px;background:rgba(8,10,14,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+nav.tabs button{flex:1 0 auto;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;color:var(--muted);background:none;border:0;border-radius:8px;padding:9px 14px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--fg);color:#07080b}
+nav.tabs button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.panel{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.panel h2{font-family:var(--f-display);font-size:20px;font-weight:700;margin:0 0 4px;letter-spacing:.02em;text-transform:uppercase;font-style:italic}
+.panel .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+.eyebrow{font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.banner{border:1px dashed rgba(255,178,30,.55);background:rgba(255,178,30,.08);color:#ffd88a;border-radius:12px;padding:12px 14px;font-size:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.banner b{color:var(--amber)}
+.tbl-wrap{overflow-x:auto;margin:0 -4px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:420px}
+th{font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+.mono{font-family:var(--f-mono);font-weight:500;font-size:14px}
+.pos{font-family:var(--f-display);font-weight:700;font-size:18px;font-style:italic;width:34px}
+.p1 .pos{color:var(--amber)}
+.name{font-weight:600}
+.pts{font-family:var(--f-display);font-weight:700;font-size:18px}
+.dim{color:var(--muted)}
+.t-purple{color:var(--purple)} .t-green{color:var(--green)}
+.chip{display:inline-block;font-family:var(--f-display);font-size:11px;font-weight:600;letter-spacing:.06em;padding:1px 7px;border-radius:5px;vertical-align:1px;margin-left:5px}
+.chip.pb{background:rgba(47,210,122,.16);color:var(--green)}
+.chip.fast{background:rgba(180,108,255,.18);color:var(--purple)}
+.chip.imp{background:rgba(255,178,30,.16);color:var(--amber)}
+.cups{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:18px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px;margin-bottom:12px}
+.seg button{font-family:var(--f-display);font-weight:600;font-size:13px;color:var(--muted);background:none;border:0;padding:6px 12px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:rgba(255,255,255,.1);color:var(--fg)}
+form.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1 1 140px;min-width:0}
+input,select{font:inherit;font-size:15px;color:var(--fg);background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:9px;padding:10px 11px;width:100%;min-width:0}
+input.mono{font-family:var(--f-mono)}
+.btn{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase;border:0;border-radius:9px;padding:11px 18px;cursor:pointer;background:var(--kerb);color:#fff;flex:0 0 auto}
+.btn.ghost{background:rgba(255,255,255,.08);color:var(--fg)}
+.btn.small{font-size:12px;padding:6px 10px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px}
+.x:hover{color:var(--kerb)}
+.x.confirm{color:#fff;background:var(--kerb)}
+.events{display:flex;flex-direction:column;gap:8px}
+.ev{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:rgba(0,0,0,.25);cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%}
+.ev:hover{border-color:rgba(255,255,255,.3)}
+.ev .rd{font-family:var(--f-display);font-weight:700;font-style:italic;font-size:22px;color:var(--kerb);min-width:40px}
+.ev .tr{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ev .meta{color:var(--muted);font-size:13px}
+.ev .win{text-align:right;font-size:13px;color:var(--muted)}
+.ev .win b{color:var(--fg);display:block;font-weight:600}
+.back{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;padding:0;margin-bottom:10px}
+.grid-players{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px}
+.pcard{border:1px solid var(--line);border-radius:12px;padding:14px;background:rgba(0,0,0,.25);display:flex;flex-direction:column;gap:8px;min-width:0}
+.pcard .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pcard .pn{font-family:var(--f-display);font-weight:700;font-size:20px;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hcp{font-family:var(--f-mono);font-weight:700;font-size:20px;color:var(--amber)}
+.hcp small{font-size:11px;color:var(--muted);font-family:var(--f-display);display:block;text-align:right;letter-spacing:.1em}
+.stats{display:flex;gap:16px;font-size:12px;color:var(--muted)}
+.stats b{display:block;color:var(--fg);font-family:var(--f-mono);font-size:14px}
+svg.spark{width:100%;height:46px;display:block}
+.laps{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.lap{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0}
+details summary{cursor:pointer;color:var(--muted);font-size:13px;margin-top:12px}
+.rules{display:flex;flex-direction:column;gap:14px;font-size:14.5px;max-width:66ch}
+.rules h3{font-family:var(--f-display);font-size:15px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.06em}
+.rules p,.rules ul{margin:0;color:#cfd5de}
+.rules ul{padding-left:18px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:0}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+.msg{font-size:13px;min-height:1.2em;color:var(--muted)}
+.msg.err{color:#ff7b74}
+.msg.ok{color:var(--green)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<canvas id="wall" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kerb"></div>
+    <h1>Hotlap <span>League</span></h1>
+    <p>Assetto Corsa EVO · ลีกจับเวลาของแก๊ง · แต้มต่อ 70% · เพดาน 8%</p>
+  </header>
+
+  <div id="demoBanner" class="banner" hidden>
+    <span><b>ข้อมูลตัวอย่าง</b> · ยังไม่มีข้อมูลจริงในลีก ไปที่แท็บ "นักแข่ง" เพิ่มชื่อเพื่อนคนแรก แล้วตัวอย่างจะหายไปเอง</span>
+  </div>
+  <div id="offline" class="banner" hidden><span id="offlineMsg">เชื่อมต่อฐานข้อมูลไม่ได้ ตรวจสอบค่า Firebase ใน index.html และกฎของ Firestore</span></div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="standings" aria-selected="true">ตารางคะแนน</button>
+    <button role="tab" data-tab="nights" aria-selected="false">คืนแข่ง</button>
+    <button role="tab" data-tab="players" aria-selected="false">นักแข่ง</button>
+    <button role="tab" data-tab="rules" aria-selected="false">กติกา</button>
+  </nav>
+
+  <main id="view"></main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firestore-compat.js"></script>
+<script>
+/* ====== วางค่า Firebase ของคุณตรงนี้ (Project settings → Your apps → Config) ====== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAovjafpxeBCBRTCU_zJdcl-WlnZMMtPN0",
+  authDomain: "hotlap-league.firebaseapp.com",
+  projectId: "hotlap-league",
+  storageBucket: "hotlap-league.firebasestorage.app",
+  messagingSenderId: "76493124927",
+  appId: "1:76493124927:web:d435bf2bebd9c59517cf8a"
+};
+</script>
+<script>
+/* ---------- constants ---------- */
+const FACTOR=0.7, CAP=8, WARMUP=3, WINDOW=5, MIN_HIST=2;
+const POINTS=[10,7,5,3,1];
+const TRACKS=["Imola","Monza","Brands Hatch","Laguna Seca","Mount Panorama","Suzuka","Nürburgring GP","Red Bull Ring"];
+
+/* ---------- state ---------- */
+const S={players:[],events:[],laps:[],loaded:{p:false,e:false,l:false},db:null,demo:false,tab:"standings",openEvent:null,cup:"hcp"};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function fmt(ms){if(ms==null||!isFinite(ms))return"–";const m=Math.floor(ms/60000),s=(ms%60000)/1000;return m+":"+s.toFixed(3).padStart(6,"0")}
+function parseTime(str){
+  str=String(str).trim().replace(/,/g,".");
+  let m=str.match(/^(\d{1,2})[:.](\d{1,2})[.:](\d{1,3})$/);
+  if(m)return (+m[1])*60000+(+m[2])*1000+ +(m[3].padEnd(3,"0"));
+  m=str.match(/^(\d{1,3})(?:\.(\d{1,3}))?$/);
+  if(m)return (+m[1])*1000+(m[2]?+(m[2].padEnd(3,"0")):0);
+  return null;
+}
+const pct=v=>(v>=0?"+":"")+v.toFixed(2)+"%";
+const thDate=d=>{try{return new Date(d+"T12:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"2-digit"})}catch(e){return d}};
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+
+/* ---------- demo data (in memory only) ---------- */
+function demoData(){
+  let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  const P=[["d1","ต้น (ตัวอย่าง)",0],["d2","บอส (ตัวอย่าง)",1.6],["d3","เจ (ตัวอย่าง)",3.1],["d4","มิว (ตัวอย่าง)",4.4],["d5","ปอ (ตัวอย่าง)",6.2]];
+  const E=[["e1","2026-09-04","Imola","Toyota GR86",104200],["e2","2026-09-11","Brands Hatch","Toyota GR86",87300],["e3","2026-09-18","Monza","BMW M2",112600],["e4","2026-09-25","Laguna Seca","BMW M2",95800],["e5","2026-10-02","Mount Panorama","Toyota GR86",141900],["e6","2026-10-09","Imola","Toyota GR86",104200]];
+  const players=P.map(p=>({id:p[0],name:p[1]})),events=E.map((e,i)=>({id:e[0],date:e[1],track:e[2],car:e[3],createdAt:i})),laps=[];
+  E.forEach((e,i)=>P.forEach((p,j)=>{if(i===3&&j===4)return;const learn=j>2?i*0.35:i*0.1;const g=Math.max(0,p[2]-learn+(rnd()-.5)*1.6);laps.push({id:"l"+i+j,eventId:e[0],playerId:p[0],ms:Math.round(e[4]*(1+g/100)+rnd()*120)})}));
+  return{players,events,laps};
+}
+
+/* ---------- league engine ---------- */
+function data(){return S.demo?demoData():{players:S.players,events:S.events,laps:S.laps}}
+function hcpFrom(hist,scoredIndex){
+  if(scoredIndex<WARMUP||hist.length<MIN_HIST)return 0;
+  return Math.min(CAP,avg(hist.slice(-WINDOW))*FACTOR);
+}
+function compute(){
+  const {players,events,laps}=data();
+  const pmap=Object.fromEntries(players.map(p=>[p.id,p]));
+  const evs=[...events].sort((a,b)=>(a.date>b.date?1:a.date<b.date?-1:(a.createdAt||0)-(b.createdAt||0)));
+  const hist={},comboBest={},results={};let scored=0;
+  const season={};players.forEach(p=>season[p.id]={hcp:[],raw:[],wins:0,nights:0,best:{}});
+  evs.forEach((ev,idx)=>{
+    ev.round=idx+1;
+    const best={};
+    laps.forEach(l=>{if(l.eventId===ev.id&&pmap[l.playerId]&&(best[l.playerId]==null||l.ms<best[l.playerId]))best[l.playerId]=l.ms});
+    const ids=Object.keys(best);
+    if(!ids.length){results[ev.id]={rows:[],scored:false};return}
+    const fast=Math.min(...ids.map(i=>best[i]));
+    const combo=ev.track+"|"+ev.car;
+    let rows=ids.map(pid=>{
+      const h=hist[pid]||[];const gap=(best[pid]-fast)/fast*100;
+      const hc=hcpFrom(h,scored);
+      const prev=(comboBest[combo]||{})[pid];
+      return{pid,name:pmap[pid].name,ms:best[pid],gap,hc,adj:best[pid]*(1-hc/100),pb:prev!=null&&best[pid]<prev,firstOnCombo:prev==null,fastest:best[pid]===fast,improve:h.length?avg(h.slice(-WINDOW))-gap:null,bonus:0}
+    });
+    // raw cup
+    [...rows].sort((a,b)=>a.ms-b.ms).forEach((r,i)=>{r.rawPos=i+1;r.rawPts=POINTS[i]||0});
+    [...rows].sort((a,b)=>a.adj-b.adj).forEach((r,i)=>{r.hcpPos=i+1;r.hcpPts=POINTS[i]||0});
+    rows.forEach(r=>{if(r.pb)r.bonus++});
+    const imp=rows.filter(r=>r.improve!=null&&r.improve>0).sort((a,b)=>b.improve-a.improve)[0];
+    if(imp){imp.mostImproved=true;imp.bonus++}
+    rows.forEach(r=>{
+      const s=season[r.pid];s.nights++;if(r.hcpPos===1)s.wins++;
+      (hist[r.pid]=hist[r.pid]||[]).push(r.gap);
+      comboBest[combo]=comboBest[combo]||{};if(comboBest[combo][r.pid]==null||r.ms<comboBest[combo][r.pid])comboBest[combo][r.pid]=r.ms;
+      if(s.best[combo]==null||r.ms<s.best[combo].ms)s.best[combo]={ms:r.ms,track:ev.track,car:ev.car};
+    });
+    rows.sort((a,b)=>a.hcpPos-b.hcpPos);
+    results[ev.id]={rows,scored:true,fast,scoredIndex:scored};
+    scored++;
+  });
+  // per event points incl. zeros for absences
+  const scoredEvs=evs.filter(e=>results[e.id].scored);
+  const table=players.map(p=>{
+    const per=scoredEvs.map(e=>{const r=results[e.id].rows.find(x=>x.pid===p.id);return r?{h:r.hcpPts+r.bonus,r:r.rawPts}:{h:0,r:0}});
+    const sum=k=>per.reduce((a,x)=>a+x[k],0);
+    const drop=k=>scoredEvs.length>=4&&per.length?Math.min(...per.map(x=>x[k])):0;
+    const h=hist[p.id]||[];
+    return{pid:p.id,name:p.name,hcpTotal:sum("h")-drop("h"),rawTotal:sum("r")-drop("r"),hcpDrop:drop("h"),rawDrop:drop("r"),
+      nights:season[p.id].nights,wins:season[p.id].wins,nextHcp:hcpFrom(h,scored),hist:h,best:season[p.id].best,avgGap:h.length?avg(h.slice(-WINDOW)):null};
+  });
+  return{evs,results,table,scored,pmap};
+}
+
+/* ---------- rendering ---------- */
+function render(){
+  const ready=S.loaded.p&&S.loaded.e&&S.loaded.l;
+  S.demo=ready?!(S.players.length||S.events.length||S.laps.length):S.demo;
+  $("#demoBanner").hidden=!S.demo;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===S.tab));
+  const C=compute();
+  const v=$("#view");
+  if(S.tab==="standings")v.innerHTML=viewStandings(C);
+  else if(S.tab==="nights")v.innerHTML=S.openEvent&&C.evs.find(e=>e.id===S.openEvent)?viewEvent(C,S.openEvent):viewNights(C);
+  else if(S.tab==="players")v.innerHTML=viewPlayers(C);
+  else v.innerHTML=viewRules();
+}
+
+function cupTable(C,key,title,sub){
+  const rows=[...C.table].sort((a,b)=>b[key+"Total"]-a[key+"Total"]||a.name.localeCompare(b.name));
+  if(!rows.length)return`<section class="panel"><h2>${title}</h2><p class="empty">ยังไม่มีนักแข่ง</p></section>`;
+  return`<section class="panel"><div class="eyebrow">${key==="hcp"?"ถ้วยหลัก":"เวลาดิบ"}</div><h2>${title}</h2><p class="sub">${sub}</p>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>นักแข่ง</th><th class="num">${key==="hcp"?"HCP ถัดไป":"Gap เฉลี่ย"}</th><th class="num">คืน</th><th class="num">คะแนน</th></tr></thead><tbody>
+  ${rows.map((r,i)=>`<tr class="${i===0&&r[key+"Total"]>0?"p1":""}"><td class="pos">${i+1}</td><td class="name">${esc(r.name)}</td>
+   <td class="num mono ${key==="hcp"?"":"dim"}">${key==="hcp"?(r.nextHcp?r.nextHcp.toFixed(2)+"%":"–"):(r.avgGap!=null?pct(r.avgGap):"–")}</td>
+   <td class="num dim">${r.nights}</td><td class="num pts">${r[key+"Total"]}</td></tr>`).join("")}
+  </tbody></table></div></section>`;
+}
+function viewStandings(C){
+  const dropNote=C.scored>=4?"ทิ้งคืนที่แย่ที่สุดแล้ว 1 คืน":`ทิ้งคืนแย่สุดเมื่อแข่งครบ 4 คืน (ตอนนี้ ${C.scored})`;
+  return`<div class="cups">${cupTable(C,"hcp","ถ้วยแต้มต่อ",`รวมคะแนนหลังหักแต้มต่อ + โบนัส · ${dropNote}`)}${cupTable(C,"raw","ถ้วยความเร็วจริง",`ใครเร็วสุดของจริง ไม่มีแต้มต่อ · ${dropNote}`)}</div>`;
+}
+
+function viewNights(C){
+  const canW=!!S.db&&!S.demo;
+  const list=[...C.evs].reverse().map(ev=>{
+    const R=C.results[ev.id];const w=R.rows.find(r=>r.hcpPos===1);const f=R.rows.find(r=>r.rawPos===1);
+    return`<button class="ev" data-open="${ev.id}"><span class="rd">R${ev.round}</span>
+      <span style="min-width:0"><div class="tr">${esc(ev.track)}</div><div class="meta">${esc(ev.car)} · ${thDate(ev.date)}</div></span>
+      <span class="win">${w?`ชนะ <b>${esc(w.name)}</b><span class="mono t-purple">${fmt(f.ms)}</span>`:"ยังไม่มีเวลา"}</span></button>`}).join("");
+  return`<section class="panel"><h2>สร้างคืนแข่ง</h2><p class="sub">เลือกสนามและรถที่ทุกคนจะใช้คืนนี้</p>
+   <form class="row" id="evForm"><label class="f">วันที่<input id="evDate" type="date" value="${today()}" required></label>
+   <label class="f">สนาม<input id="evTrack" list="trackList" placeholder="เช่น Imola" required></label>
+   <label class="f">รถ<input id="evCar" placeholder="เช่น Toyota GR86" required></label>
+   <button class="btn" ${canW?"":"disabled"}>สร้าง</button></form>
+   <datalist id="trackList">${TRACKS.map(t=>`<option value="${t}">`).join("")}</datalist>
+   <div class="msg" id="evMsg">${S.demo?"เพิ่มนักแข่งก่อน แล้วค่อยสร้างคืนแข่งแรก":""}</div></section>
+   <section class="panel"><h2>ทุกคืน</h2><p class="sub">แตะเพื่อกรอกเวลาและดูผล</p><div class="events">${list||'<p class="empty">ยังไม่มีคืนแข่ง</p>'}</div></section>`;
+}
+
+function viewEvent(C,id){
+  const ev=C.evs.find(e=>e.id===id);const R=C.results[id];const {players,laps}=data();
+  const canW=!!S.db&&!S.demo;
+  const warm=R.scored&&R.scoredIndex<WARMUP;
+  const rows=R.rows.map(r=>`<tr class="${r.hcpPos===1?"p1":""}"><td class="pos">${r.hcpPos}</td>
+    <td class="name">${esc(r.name)}${r.fastest?'<span class="chip fast">FASTEST</span>':""}${r.pb?'<span class="chip pb">PB +1</span>':""}${r.mostImproved?'<span class="chip imp">พัฒนาสุด +1</span>':""}</td>
+    <td class="num mono ${r.fastest?"t-purple":r.pb?"t-green":""}">${fmt(r.ms)}</td><td class="num mono dim">${r.fastest?"–":pct(r.gap)}</td>
+    <td class="num mono dim">${r.hc?"−"+r.hc.toFixed(2)+"%":"–"}</td><td class="num mono">${fmt(Math.round(r.adj))}</td>
+    <td class="num pts">${r.hcpPts+r.bonus}</td><td class="num dim">${r.rawPts}</td></tr>`).join("");
+  const byP={};laps.filter(l=>l.eventId===id).forEach(l=>(byP[l.playerId]=byP[l.playerId]||[]).push(l));
+  const lapList=Object.entries(byP).map(([pid,ls])=>{const p=C.pmap[pid];if(!p)return"";ls.sort((a,b)=>a.ms-b.ms);
+    return`<div><div class="name" style="margin-top:8px">${esc(p.name)}</div><div class="laps">${ls.map((l,i)=>`<div class="lap"><span class="mono ${i===0?"":"dim"}">${fmt(l.ms)}</span>${canW?`<button class="x" data-del="${l.id}">ลบ</button>`:""}</div>`).join("")}</div></div>`}).join("");
+  return`<section class="panel"><button class="back" data-back>← ทุกคืน</button>
+   <div class="eyebrow">Round ${ev.round} · ${thDate(ev.date)}</div><h2>${esc(ev.track)}</h2><p class="sub">${esc(ev.car)}${warm?" · ช่วงเก็บข้อมูล ยังไม่ใช้แต้มต่อ":""}</p>
+   <form class="row" id="lapForm"><label class="f">นักแข่ง<select id="lapP" required>${players.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select></label>
+   <label class="f">เวลาต่อรอบ<input id="lapT" class="mono" inputmode="decimal" placeholder="1:43.512" autocomplete="off" required></label>
+   <button class="btn" ${canW&&players.length?"":"disabled"}>บันทึก</button></form>
+   <div class="msg" id="lapMsg">กรอกได้หลายรอบ ระบบเลือกรอบเร็วสุดให้เอง · นับเฉพาะรอบที่เกมไม่ขึ้น invalid</div></section>
+   <section class="panel"><h2>ผลคืนนี้</h2><p class="sub">เรียงตามเวลาหลังหักแต้มต่อ</p>
+   ${R.rows.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>นักแข่ง</th><th class="num">เวลา</th><th class="num">Gap</th><th class="num">HCP</th><th class="num">หลังหัก</th><th class="num">แต้ม</th><th class="num">ดิบ</th></tr></thead><tbody>${rows}</tbody></table></div>
+   <div class="legend"><span><i style="background:var(--purple)"></i>เร็วสุดของคืน</span><span><i style="background:var(--green)"></i>ทำ PB ใน combo นี้</span><span><i style="background:var(--amber)"></i>พัฒนามากสุด</span></div>`:'<p class="empty">ยังไม่มีเวลา กรอกรอบแรกด้านบนได้เลย</p>'}
+   ${lapList?`<details><summary>รอบทั้งหมดที่บันทึก</summary>${lapList}</details>`:""}
+   ${canW?`<details><summary>ลบคืนแข่งนี้</summary><p class="dim" style="font-size:13px">ลบคืนนี้พร้อมเวลาทั้งหมดในคืนนี้</p><button class="btn small" data-delev="${id}">ลบคืนนี้</button></details>`:""}</section>`;
+}
+
+function spark(h){
+  if(h.length<2)return'<div class="dim" style="font-size:12px;height:46px;display:flex;align-items:center">กราฟขึ้นเมื่อแข่งครบ 2 คืน</div>';
+  const W=240,H=46,pad=5,mx=Math.max(...h,1),n=h.length;
+  const pts=h.map((v,i)=>[pad+i*(W-2*pad)/(n-1),pad+(v/mx)*(H-2*pad)]);
+  const d=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  const last=pts[n-1];
+  return`<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Gap จากคนเร็วสุดแต่ละคืน"><line x1="0" x2="${W}" y1="${pad}" y2="${pad}" stroke="var(--purple)" stroke-opacity=".35" stroke-dasharray="3 4"/><path d="${d} L${last[0]} ${H} L${pts[0][0]} ${H}Z" fill="var(--amber)" fill-opacity=".1"/><path d="${d}" fill="none" stroke="var(--amber)" stroke-width="2" vector-effect="non-scaling-stroke"/><circle cx="${last[0]}" cy="${last[1]}" r="3.5" fill="var(--amber)"/></svg>`;
+}
+function viewPlayers(C){
+  const canW=!!S.db;
+  const cards=C.table.map(t=>{const pbs=Object.values(t.best).sort((a,b)=>a.track.localeCompare(b.track));
+    return`<div class="pcard"><div class="top"><span class="pn">${esc(t.name)}</span><span class="hcp">${t.nextHcp?t.nextHcp.toFixed(2)+"%":"–"}<small>HCP</small></span></div>
+    <div class="stats"><span>คืน<b>${t.nights}</b></span><span>ชนะ<b>${t.wins}</b></span><span>Gap เฉลี่ย<b>${t.avgGap!=null?pct(t.avgGap):"–"}</b></span></div>
+    ${spark(t.hist)}<div class="dim" style="font-size:11px">เส้นต่ำ = ใกล้คนเร็วสุด · เส้นประม่วง = เวลาคนเร็วสุด</div>
+    ${pbs.length?`<details><summary>สถิติส่วนตัว (${pbs.length})</summary><div class="laps">${pbs.map(b=>`<div class="lap"><span>${esc(b.track)} <span class="dim">· ${esc(b.car)}</span></span><span class="mono t-green">${fmt(b.ms)}</span></div>`).join("")}</div></details>`:""}
+    ${canW&&!S.demo?`<button class="x" data-delp="${t.pid}" style="align-self:flex-start">ลบนักแข่ง</button>`:""}</div>`}).join("");
+  return`<section class="panel"><h2>เพิ่มนักแข่ง</h2><p class="sub">ใส่ชื่อเล่นเพื่อนทุกคนในแก๊ง (4–5 คน)</p>
+   <form class="row" id="pForm"><label class="f">ชื่อ<input id="pName" maxlength="24" placeholder="ชื่อเล่น" required></label><button class="btn" ${canW?"":"disabled"}>เพิ่ม</button></form><div class="msg" id="pMsg"></div></section>
+   <section class="panel"><h2>นักแข่ง</h2><p class="sub">HCP คือ % ที่จะถูกหักจากเวลาในคืนถัดไป</p><div class="grid-players">${cards||'<p class="empty">ยังไม่มีนักแข่ง</p>'}</div></section>`;
+}
+
+function viewRules(){
+  return`<section class="panel"><h2>กติกาลีก</h2><p class="sub">ซีซั่นละ 6–8 คืน · 1 คืน = 1 combo สนาม + รถ</p><div class="rules">
+  <div><h3>คืนแข่ง</h3><ul><li>ทุกคนใช้สนาม รถ อากาศ และเวลาในเกมเดียวกัน ใช้ setup default</li><li>ผลัดกันขับคนละ 10 นาที × 2 รอบ นับ best lap</li><li>นับเฉพาะรอบที่เกมไม่ขึ้น invalid</li></ul></div>
+  <div><h3>แต้มต่อ (HCP)</h3><p>HCP = 70% ของค่าเฉลี่ย Gap (% ที่ช้ากว่าคนเร็วสุดของคืน) จาก 5 คืนล่าสุด สูงสุด 8% · 3 คืนแรกของลีกยังไม่ใช้ และต้องมีผลอย่างน้อย 2 คืน</p><p class="dim" style="margin-top:6px">ตัวอย่าง: HCP 3% ทำ 1:43.500 → หลังหัก 1:40.395</p></div>
+  <div><h3>คะแนน</h3><ul><li>อันดับ 1–5 ได้ 10 · 7 · 5 · 3 · 1</li><li>ถ้วยแต้มต่อ: เรียงจากเวลาหลังหัก + โบนัส PB +1 (เร็วกว่าสถิติเดิมใน combo เดิม) และพัฒนามากสุด +1</li><li>ถ้วยความเร็วจริง: เรียงจากเวลาดิบ ไม่มีโบนัส</li><li>แข่งครบ 4 คืนขึ้นไป ทิ้งคืนที่คะแนนน้อยสุด 1 คืน (คืนที่ขาดนับเป็น 0)</li></ul></div>
+  <div><h3>สีบนจอจับเวลา</h3><p><span class="t-purple">ม่วง</span> = เร็วสุดของคืน · <span class="t-green">เขียว</span> = Personal Best</p></div>
+  </div></section>`;
+}
+
+/* ---------- actions ---------- */
+function msg(id,t,cls){const m=$(id);if(m){m.textContent=t;m.className="msg "+(cls||"")}}
+async function guard(fn,id){try{await fn()}catch(e){msg(id,"บันทึกไม่สำเร็จ: "+(e&&e.code==="permission-denied"?"ฐานข้อมูลไม่อนุญาต ตรวจสอบกฎของ Firestore":(e&&e.message)||"ลองใหม่อีกครั้ง"),"err")}}
+document.addEventListener("submit",async e=>{
+  e.preventDefault();if(!S.db)return;
+  if(e.target.id==="pForm"){const n=$("#pName").value.trim();if(!n)return;
+    if(S.players.some(p=>p.name===n)){msg("#pMsg","มีชื่อนี้แล้ว","err");return}
+    await guard(async()=>{await S.db.collection("players").add({name:n,createdAt:Date.now()});msg("#pMsg","เพิ่ม "+n+" แล้ว","ok")},"#pMsg")}
+  if(e.target.id==="evForm"){if(S.demo)return;const d=$("#evDate").value,t=$("#evTrack").value.trim(),c=$("#evCar").value.trim();if(!d||!t||!c)return;
+    await guard(async()=>{const r=await S.db.collection("events").add({date:d,track:t,car:c,createdAt:Date.now()});S.openEvent=r.id;render()},"#evMsg")}
+  if(e.target.id==="lapForm"){const ms=parseTime($("#lapT").value),pid=$("#lapP").value;
+    if(ms==null||ms<20000||ms>900000){msg("#lapMsg","รูปแบบเวลาไม่ถูก ลองพิมพ์แบบ 1:43.512","err");return}
+    const keep=pid;
+    await guard(async()=>{await S.db.collection("laps").add({eventId:S.openEvent,playerId:pid,ms,createdAt:Date.now()});
+      const sel=$("#lapP");if(sel)sel.value=keep;const t=$("#lapT");if(t){t.value="";t.focus()}
+      msg("#lapMsg","บันทึก "+fmt(ms)+" ให้ "+(S.players.find(p=>p.id===pid)||{}).name+" แล้ว","ok")},"#lapMsg")}
+});
+let armed=null;
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.tab){S.tab=t.dataset.tab;S.openEvent=null;try{history.replaceState(null,"","#"+S.tab)}catch(_){}render();window.scrollTo({top:0});return}
+  if(t.dataset.open){S.openEvent=t.dataset.open;render();return}
+  if(t.hasAttribute("data-back")){S.openEvent=null;render();return}
+  if(t.dataset.cup){S.cup=t.dataset.cup;render();return}
+  const delKey=t.dataset.del||t.dataset.delp||t.dataset.delev;
+  if(delKey&&S.db){
+    if(armed!==t){if(armed){armed.classList.remove("confirm");armed.textContent=armed.dataset.label}armed=t;t.dataset.label=t.textContent;t.classList.add("confirm");t.textContent="แตะอีกครั้งเพื่อยืนยัน";return}
+    armed=null;
+    try{
+      if(t.dataset.del)await S.db.doc("laps/"+t.dataset.del).delete();
+      if(t.dataset.delp){for(const l of S.laps.filter(l=>l.playerId===t.dataset.delp))await S.db.doc("laps/"+l.id).delete();await S.db.doc("players/"+t.dataset.delp).delete()}
+      if(t.dataset.delev){const id=t.dataset.delev;for(const l of S.laps.filter(l=>l.eventId===id))await S.db.doc("laps/"+l.id).delete();await S.db.doc("events/"+id).delete();S.openEvent=null;render()}
+    }catch(err){t.classList.remove("confirm");t.textContent="ลบไม่สำเร็จ"}
+  }
+});
+
+function safeRender(){
+  const vals={};document.querySelectorAll("#view input,#view select").forEach(el=>{if(el.id)vals[el.id]=el.value});
+  const f=document.activeElement&&document.activeElement.id;render();
+  Object.entries(vals).forEach(([k,v])=>{const el=document.getElementById(k);if(el&&v!=="")el.value=v});
+  if(f&&document.getElementById(f))document.getElementById(f).focus({preventScroll:true});
+}
+/* ---------- boot ---------- */
+(function(){const h=(location.hash||"").slice(1);if(["standings","nights","players","rules"].includes(h))S.tab=h})();
+S.demo=true;render();
+(function(){
+  let db=null;
+  try{
+    if(!FIREBASE_CONFIG.projectId||FIREBASE_CONFIG.projectId==="PASTE_HERE")throw new Error("noconfig");
+    firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();
+  }catch(e){
+    $("#offlineMsg").textContent=e.message==="noconfig"?"ยังไม่ได้ใส่ค่า Firebase ใน index.html ตอนนี้แสดงข้อมูลตัวอย่างอย่างเดียว":"เชื่อมต่อ Firebase ไม่สำเร็จ ตรวจสอบค่า config อีกครั้ง";
+    $("#offline").hidden=false;return;
+  }
+  S.db=db;
+  const sub=(name,key)=>db.collection(name).onSnapshot(snap=>{S[name]=snap.docs.map(d=>({id:d.id,...d.data()}));S.loaded[key]=true;
+      if(S.loaded.p&&S.loaded.e&&S.loaded.l)safeRender()},
+    err=>{$("#offlineMsg").textContent="อ่านข้อมูลไม่ได้ ("+(err&&err.code||"error")+") ตรวจสอบกฎของ Firestore";$("#offline").hidden=false});
+  sub("players","p");sub("events","e");sub("laps","l");
+})();
+
+/* ---------- wallpaper: night circuit ---------- */
+(function(){
+  const wall=$("#wall"),fx=$("#fx"),wc=wall.getContext("2d"),fc=fx.getContext("2d");
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W,H,dpr,curves=[];
+  const bez=(c,t)=>{const u=1-t;return[u*u*u*c[0]+3*u*u*t*c[2]+3*u*t*t*c[4]+t*t*t*c[6],u*u*u*c[1]+3*u*u*t*c[3]+3*u*t*t*c[5]+t*t*t*c[7]]};
+  const tan=(c,t)=>{const u=1-t;const x=3*u*u*(c[2]-c[0])+6*u*t*(c[4]-c[2])+3*t*t*(c[6]-c[4]),y=3*u*u*(c[3]-c[1])+6*u*t*(c[5]-c[3])+3*t*t*(c[7]-c[5]);const l=Math.hypot(x,y)||1;return[x/l,y/l]};
+  function size(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;[wall,fx].forEach(c=>{c.width=W*dpr;c.height=H*dpr});wc.setTransform(dpr,0,0,dpr,0,0);fc.setTransform(dpr,0,0,dpr,0,0);
+    const base=[-0.1*W,0.95*H, 0.35*W,0.55*H, 0.55*W,1.25*H, 1.1*W,0.25*H];
+    curves=[-60,-28,0,28,60].map(o=>base.map((v,i)=>i%2?v+o:v));drawWall()}
+  function drawWall(){
+    const g=wc.createLinearGradient(0,0,0,H);g.addColorStop(0,"#0a0c12");g.addColorStop(.6,"#07080b");g.addColorStop(1,"#040506");wc.fillStyle=g;wc.fillRect(0,0,W,H);
+    // asphalt grain
+    const n=Math.floor(W*H/38);for(let i=0;i<n;i++){const v=20+Math.random()*30;wc.fillStyle=`rgba(${v},${v+3},${v+8},${Math.random()*.5})`;wc.fillRect(Math.random()*W,Math.random()*H,1,1)}
+    // track surface band
+    const c=curves[2];wc.lineCap="round";
+    wc.strokeStyle="rgba(28,31,38,.85)";wc.lineWidth=170;wc.beginPath();wc.moveTo(c[0],c[1]);wc.bezierCurveTo(c[2],c[3],c[4],c[5],c[6],c[7]);wc.stroke();
+    // rubbered racing line
+    wc.strokeStyle="rgba(5,6,8,.55)";wc.lineWidth=36;wc.stroke();
+    // white edge lines
+    [-85,85].forEach(o=>{const e=c.map((v,i)=>i%2?v+o:v);wc.strokeStyle="rgba(230,232,236,.22)";wc.lineWidth=2.5;wc.beginPath();wc.moveTo(e[0],e[1]);wc.bezierCurveTo(e[2],e[3],e[4],e[5],e[6],e[7]);wc.stroke()});
+    // kerbs on inside edge
+    const k=c.map((v,i)=>i%2?v-96:v);const N=140;
+    for(let i=0;i<N;i++){const t0=i/N,t1=(i+1)/N;const a=bez(k,t0),b=bez(k,t1),tg=tan(k,t0),nx=-tg[1]*9,ny=tg[0]*9;
+      wc.fillStyle=i%2?"rgba(240,240,236,.55)":"rgba(227,50,43,.7)";wc.beginPath();wc.moveTo(a[0]-nx,a[1]-ny);wc.lineTo(b[0]-nx,b[1]-ny);wc.lineTo(b[0]+nx,b[1]+ny);wc.lineTo(a[0]+nx,a[1]+ny);wc.closePath();wc.fill()}
+    // grid lines like a timing overlay
+    wc.strokeStyle="rgba(150,165,190,.05)";wc.lineWidth=1;for(let x=0;x<W;x+=48){wc.beginPath();wc.moveTo(x,0);wc.lineTo(x,H);wc.stroke()}
+    // vignette
+    const v=wc.createRadialGradient(W*.5,H*.45,Math.min(W,H)*.2,W*.5,H*.5,Math.max(W,H)*.8);v.addColorStop(0,"rgba(0,0,0,0)");v.addColorStop(1,"rgba(0,0,0,.75)");wc.fillStyle=v;wc.fillRect(0,0,W,H);
+  }
+  const trails=[{c:1,col:"227,50,43",w:3,sp:.9,dash:[140,520]},{c:3,col:"255,178,30",w:2,sp:.6,dash:[90,640]},{c:0,col:"235,240,255",w:2,sp:1.2,dash:[200,800]},{c:4,col:"180,108,255",w:1.6,sp:.45,dash:[60,700]},{c:2,col:"227,50,43",w:2.4,sp:1,dash:[120,900]}];
+  let off=0,last=0;
+  function frame(ts){
+    if(ts-last>33||reduce){last=ts;off+=6;fc.clearRect(0,0,W,H);fc.lineCap="round";
+      trails.forEach((t,i)=>{const c=curves[t.c];fc.setLineDash(t.dash);fc.lineDashOffset=-(off*t.sp+i*300);fc.strokeStyle=`rgba(${t.col},.8)`;fc.lineWidth=t.w;fc.shadowColor=`rgba(${t.col},.9)`;fc.shadowBlur=14;fc.beginPath();fc.moveTo(c[0],c[1]);fc.bezierCurveTo(c[2],c[3],c[4],c[5],c[6],c[7]);fc.stroke()});
+      fc.setLineDash([]);fc.shadowBlur=0}
+    if(!reduce)requestAnimationFrame(frame)}
+  addEventListener("resize",()=>{size();if(reduce)frame(0)});size();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
